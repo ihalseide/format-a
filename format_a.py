@@ -14,11 +14,27 @@ WIDTH : 1 byte, LENGTH : WIDTH bytes, ARRAY : WIDTH * LENGTH bytes
 
 '''
 
+from math import log
+
+
+def byte_length (bit_length):
+    print('bits', bit_length)
+    return (-8 & (bit_length + 7)) >> 3
+
+
+def auto_width (numbers):
+    return byte_length(max(x.bit_length() for x in numbers))
+
 
 def write_one (file, num, width=1, signed=True):
     '''Write one number of a certain byte width to a file'''
-    b = num.to_bytes(width, byteorder='big', signed=signed)
-    return file.write(b)
+    try:
+        b = num.to_bytes(width, byteorder='big', signed=signed)
+        return file.write(b)
+    except OverflowError as e:
+        # Store error data
+        e.x = num
+        raise e
 
 
 def read_one (file, width=1, signed=True):
@@ -27,85 +43,119 @@ def read_one (file, width=1, signed=True):
     return int.from_bytes(b, byteorder='big', signed=signed)
 
 
-def read_file (file):
+def read_file (file, max_width=None, signed=True):
     '''Read a file using the file format. Returns a tuple of (width, length, array)'''
     width = read_one(file)
-    assert width
+
+    if not width:
+        raise ValueError('byte width in file is zero')
+
+    if max_width is not None and width > max_width:
+        raise ValueError('maximum byte width exceeded in file')
+
     length = read_one(file, width, signed=False)
-    array = [read_one(file, width) for i in range(length)]
+    array = [read_one(file, width, signed) for i in range(length)]
+
     return width, length, array
 
 
-def write_file (file, array, width):
+def write_file (file, array, width, signed=True):
     '''Write an array of numbers to a file of this format'''
     write_one(file, width)
     write_one(file, len(array), width, signed=False)
     for x in array:
-        write_one(file, x, width)
+        write_one(file, x, width, signed)
 
 
-if __name__ == '__main__':
+def error (*args, **kwargs):
+    print(*args, **kwargs, file=sys.stderr)
+
+# Global
+base = 10
+prefixp = False
+
+def repr_num (num):
+    if base == 10:
+        return str(num)
+
+    if base == 16:
+        s = hex(num)
+    elif base == 8:
+        s = oct(num)
+    elif base == 2:
+        s = bin(num)
+
+    if not prefixp:
+        s = s[2:]
+    return s
+
+
+# Command-line script
+if __name__ == "__main__":
     import sys, argparse
 
-    p = argparse.ArgumentParser(epilog='Note: appending to the file data does not mean the file will be opened in append-only mode, and also the -o option cannot be present with -a or -p')
-    p.add_argument('-i, --info', dest='info', action='store_true', help='print out human-readable file info (only when reading)')
-    p.add_argument('file', help='the name of the file to read or write')
-    p.add_argument('-o', dest='overwrite', type=str, help='write comma-separated numbers to the file')
-    p.add_argument('-a', dest='append', type=str, help='append a comma-separated list numbers to the file')
-    p.add_argument('-p', dest='prepend', type=str, help='prepend a comma-separated list numbers to the file')
-    p.add_argument('-w', dest='width', default=1, type=int, help='specify the byte-width of each number when writing (default is 1)')
+    flag = "store_true"
+
+    p = argparse.ArgumentParser()
+    p.add_argument("file", help="the name of the file to encode or decode")
+    p.add_argument("-d", dest="decode", action=flag, help="decode the input file")
+    p.add_argument("-w", dest="width", type=int, help="specify the actual byte-width of each number when encoding (default: automatic based on the data), or the maximum byte-width when decoding (default: 10 bytes)")
+    p.add_argument("-u", dest="unsigned", action=flag, help="treat numbers as unsigned")
+    p.add_argument("-p", dest="prefix", action=flag, help="prefix numbers with the base prefix")
+    g = p.add_mutually_exclusive_group()
+    g.add_argument("-b", dest="bin", action=flag, help="use binary number format")
+    g.add_argument("-o", dest="oct", action=flag, help="use octal number format")
+    g.add_argument("-x", dest="hex", action=flag, help="use hexadecimal number format")
     args = p.parse_args()
 
-    if args.overwrite:
-        if args.append or args.prepend:
-            print(sys.argv[0], 'error', 'writing to a file while also appending or prepending is not allowed', sep=': ', file=sys.stderr)
+    signed = not args.unsigned
+    prefixp = args.prefix
 
-        # Take numbers from the -write argument
-        with open(args.file, 'wb') as file:
-            try:
-                nums = [int(x.strip()) for x in args.overwrite.split(',')]
-            except ValueError:
-                print(sys.argv[0], 'error', 'the number list to write is formatted incorrectly', sep=': ', file=sys.stderr)
-                sys.exit(-1)
+    # Byte width sanity check
+    if args.width is not None and args.width <= 0:
+        error("byte width is 0 or below")
+        sys.exit(-1)
 
-            write_file(file, nums, args.width) 
+    # Number base
+    if args.hex:
+        base = 16
+    elif args.oct:
+        base = 8
+    elif args.bin:
+        base = 2
+
+    # Now either encode or decode
+    if args.decode:
+        # Read a file in
+        if args.width is None:
+            # Default byte-width limit when reading
+            args.width = 10
+
+        try:
+            with open(args.file, "rb") as file:
+                width, length, nums = read_file(file, args.width, signed) 
+            print(" ".join(repr_num(x) for x in nums))
+            sys.exit(0)
+        except Exception as e:
+            error(e)
+            sys.exit(1)
     else:
-        # Get file data
-        with open(args.file, 'rb') as file:
-            width, length, nums = read_file(file) 
+        # Write a file out, with input data from stdin
+        data = sys.stdin.read()
+        nums = [int(x.strip()) for x in data.split(" ")]
 
-        if args.append or args.prepend:
-            error = False
+        if args.width is None:
+            # Default byte-width limit when writing
+            args.width = auto_width(nums)
+            print('auto width', args.width)
 
-            # Prepend the numbers passed to the -prepend argument
-            if args.prepend:
-                try:
-                    nums = [int(x.strip()) for x in args.prepend.split(',')] + nums
-                except ValueError:
-                    error = True
-                    print(sys.argv[0], 'error', 'the number list to prepend is formatted incorrectly', sep=': ', file=sys.stderr)
-
-            # Append the numbers passed to the -append argument
-            if args.append:
-                try:
-                    nums += [int(x.strip()) for x in args.append.split(',')]
-                except ValueError:
-                    error = True
-                    print(sys.argv[0], 'error', 'the number list to append is formatted incorrectly', sep=': ', file=sys.stderr)
-
-            if error:
-                sys.exit(-1)
-
-            with open(args.file, 'wb') as file:
-                write_file(file, nums, max(width, args.width or 0))
-        else:
-            if args.info:
-                # Read and print out file info
-                print(width, 'byte(s) per number,')
-                print(length, 'number(s) in total,')
-                print('numbers:', end=' ')
-
-            print(', '.join(str(x) for x in nums))
+        try:
+            with open(args.file, "wb") as file:
+                write_file(file, nums, args.width, signed)
+            sys.exit(0)
+        except OverflowError as e:
+            error("Overflow error: integer '%d' is too big to store in a byte width of %d" % (e.x, args.width))
+            sys.exit(1)
 
 
 '''
