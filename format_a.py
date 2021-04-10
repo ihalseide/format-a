@@ -45,6 +45,14 @@ def read_one (file, width=1, signed=True):
 
 def read_file (file, max_width=None, signed=True):
     '''Read a file using the file format. Returns a tuple of (width, length, array)'''
+
+    width, length = count_file(file, max_width)
+    array = [read_one(file, width, signed) for i in range(length)]
+
+    return width, length, array
+
+
+def count_file (file, max_width=None):
     width = read_one(file)
 
     if not width:
@@ -54,9 +62,7 @@ def read_file (file, max_width=None, signed=True):
         raise ValueError('maximum byte width exceeded in file')
 
     length = read_one(file, width, signed=False)
-    array = [read_one(file, width, signed) for i in range(length)]
-
-    return width, length, array
+    return width, length
 
 
 def write_file (file, array, width, signed=True):
@@ -94,11 +100,14 @@ def repr_num (num):
 if __name__ == "__main__":
     import sys, argparse
 
+    # Global
     flag = "store_true"
 
     p = argparse.ArgumentParser()
     p.add_argument("file", help="the name of the file to encode or decode")
-    p.add_argument("-d", dest="decode", action=flag, help="decode the input file")
+    g1 = p.add_mutually_exclusive_group()
+    g1.add_argument("-d", dest="decode", action=flag, help="decode file as input")
+    g1.add_argument("-c", dest="count", action=flag, help="count the number of numbers in the input file")
     p.add_argument("-w", dest="width", type=int, help="specify the actual byte-width of each number when encoding (default: automatic based on the data), or the maximum byte-width when decoding (default: 10 bytes)")
     p.add_argument("-u", dest="unsigned", action=flag, help="treat numbers as unsigned")
     p.add_argument("-p", dest="prefix", action=flag, help="prefix numbers with the base prefix")
@@ -139,6 +148,12 @@ if __name__ == "__main__":
         except Exception as e:
             error(e)
             sys.exit(1)
+    elif args.count:
+        # Count the file data length
+        with open(args.file, "rb") as file:
+            width, length = count_file(file, args.width)
+        print(repr_num(length))
+        sys.exit(0)
     else:
         # Write a file out, with input data from stdin
         data = sys.stdin.read()
