@@ -1,0 +1,13 @@
+File/Data format A
+
+see .ase picture
+
+C = 1-byte number that tells how many bytes are each number is
+N = C bytes that tell the length of the data
+Data[0...N] = data
+
+struct A {
+	char C;
+	<C> N;
+	<C> Data [N];
+}
