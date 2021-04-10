@@ -76,22 +76,25 @@ def write_file (file, array, width, signed=True):
 def error (*args, **kwargs):
     print(*args, **kwargs, file=sys.stderr)
 
-# Global
-base = 10
-prefixp = False
 
 def repr_num (num):
+    global args
+
+    base = args.base
+
     if base == 10:
         return str(num)
 
     if base == 16:
         s = hex(num)
+        if args.hexup:
+            s = s.upper()
     elif base == 8:
         s = oct(num)
     elif base == 2:
         s = bin(num)
 
-    if not prefixp:
+    if not args.prefix:
         s = s[2:]
     return s
 
@@ -110,15 +113,15 @@ if __name__ == "__main__":
     g1.add_argument("-c", dest="count", action=flag, help="count the number of numbers in the input file")
     p.add_argument("-w", dest="width", type=int, help="specify the actual byte-width of each number when encoding (default: automatic based on the data), or the maximum byte-width when decoding (default: 10 bytes)")
     p.add_argument("-u", dest="unsigned", action=flag, help="treat numbers as unsigned")
-    p.add_argument("-p", dest="prefix", action=flag, help="prefix numbers with the base prefix")
-    g = p.add_mutually_exclusive_group()
-    g.add_argument("-b", dest="bin", action=flag, help="use binary number format")
-    g.add_argument("-o", dest="oct", action=flag, help="use octal number format")
-    g.add_argument("-x", dest="hex", action=flag, help="use hexadecimal number format")
+    p.add_argument("-p", dest="prefix", action=flag, help="prefix numbers with the base prefix (not base 10)")
+    g2 = p.add_mutually_exclusive_group()
+    g2.add_argument("-b", dest="bin", action=flag, help="binary number format")
+    g2.add_argument("-o", dest="oct", action=flag, help="octal number format")
+    g2.add_argument("-x", dest="hex", action=flag, help="hexadecimal number format (lower case)")
+    g2.add_argument("-X", dest="hexup", action=flag, help="hexadecimal number format (upper case)")
     args = p.parse_args()
 
     signed = not args.unsigned
-    prefixp = args.prefix
 
     # Byte width sanity check
     if args.width is not None and args.width <= 0:
@@ -126,12 +129,13 @@ if __name__ == "__main__":
         sys.exit(-1)
 
     # Number base
-    if args.hex:
-        base = 16
+    args.base = 10
+    if args.hex or args.hexup:
+        args.base = 16
     elif args.oct:
-        base = 8
+        args.base = 8
     elif args.bin:
-        base = 2
+        args.base = 2
 
     # Now either encode or decode
     if args.decode:
