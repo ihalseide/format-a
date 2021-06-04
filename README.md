@@ -1,18 +1,20 @@
 # Format A
 
-This is a data format that I came up with on my own (that definitely has been thought of before).
+This is a binary data format that I came up with on my own (that definitely has been thought of before). It's good for storing a large amount of numbers, uncompressed (although you could always gzip the binary files). The numbers will stay in the order that you put them in.
 
-C = 1-byte number that tells how many bytes each number is
-N = C bytes that tell the length of the data
-Data[0...N] = N\*C bytes that represent N numbers, each of size C
+Advantages: it's simple.
 
-    struct A {
-    	char C;
-    	char N[<C>];
-    	char Data[N][<C>];
-    }
+Disadvantages: every number takes the same number of bytes to encode, and, for example, if you choose too large of a byte width, the file will be larger than necessary.
 
-## Command Line Tool
+Data layout:
+
+1. a byte, called C, indicating how many bytes every single subsequent number is encoded within
+2. a number, called N, indicating how many numbers are in the number list
+3. an ordered list of N numbers, where each number in the list is represented with C bytes
+
+All numbers after the first byte are big-endian. The total size of the structure is `C * (N + 1) + 1` bytes.
+
+## Command Line Usage
 
 Run it with `$ python a.py`.
 
@@ -35,4 +37,15 @@ Run it with `$ python a.py`.
       -p          prefix numbers with the base prefix (not base 10)
     
     If -d or -c is supplied, the given file will be decoded into stdout, otherwise stdin will be scanned for numbers separated by spaces and written to the given file.
+
+Examples
+
+
+## Library Usage
+
+Download "format\_a.py" and slap it into your project files. Wherever you need it, just `import format_a`.
+
+## License
+
+This project is licensed under the MIT License. See the file "LICENSE.txt" for more information.
 
