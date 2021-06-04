@@ -14,7 +14,7 @@ WIDTH : 1 byte, LENGTH : WIDTH bytes, ARRAY : WIDTH * LENGTH bytes
 
 '''
 
-import format_a
+from format_a import *
 
 
 def error (*args, **kwargs):
