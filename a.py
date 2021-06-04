@@ -50,19 +50,19 @@ if __name__ == "__main__":
     # Global
     flag = "store_true"
 
-    p = argparse.ArgumentParser()
+    p = argparse.ArgumentParser(epilog='If -d or -c is supplied, the given file will be decoded into stdout, otherwise stdin will be scanned for numbers separated by spaces and written to the given file.')
     p.add_argument("file", help="the name of the file to encode or decode")
     g1 = p.add_mutually_exclusive_group()
-    g1.add_argument("-d", dest="decode", action=flag, help="decode file as input")
     g1.add_argument("-c", dest="count", action=flag, help="count the number of numbers in the input file")
-    p.add_argument("-w", dest="width", type=int, help="specify the actual byte-width of each number when encoding (default: automatic based on the data), or the maximum byte-width when decoding (default: 10 bytes)")
+    g1.add_argument("-d", dest="decode", action=flag, help="decode file as input")
     p.add_argument("-u", dest="unsigned", action=flag, help="treat numbers as unsigned")
-    p.add_argument("-p", dest="prefix", action=flag, help="prefix numbers with the base prefix (not base 10)")
+    p.add_argument("-w", dest="width", type=int, help="specify the actual byte-width of each number when encoding (default: automatic based on the data), or the maximum byte-width when decoding (default: 10 bytes)")
     g2 = p.add_mutually_exclusive_group()
+    g2.add_argument("-X", dest="hexup", action=flag, help="hexadecimal number format (upper case)")
     g2.add_argument("-b", dest="bin", action=flag, help="binary number format")
     g2.add_argument("-o", dest="oct", action=flag, help="octal number format")
     g2.add_argument("-x", dest="hex", action=flag, help="hexadecimal number format (lower case)")
-    g2.add_argument("-X", dest="hexup", action=flag, help="hexadecimal number format (upper case)")
+    p.add_argument("-p", dest="prefix", action=flag, help="prefix numbers with the base prefix (not base 10)")
     args = p.parse_args()
 
     signed = not args.unsigned
