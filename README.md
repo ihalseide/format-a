@@ -9,10 +9,10 @@ Disadvantages: every number takes the same number of bytes to encode, and, for e
 Data layout:
 
 1. a byte, called C, indicating how many bytes every single subsequent number is encoded within
-2. a number, called N, indicating how many numbers are in the number list
+2. an unsigned number, called N, indicating how many numbers are in the number list
 3. an ordered list of N numbers, where each number in the list is represented with C bytes
 
-All numbers after the first byte are big-endian. The total size of the structure is `C * (N + 1) + 1` bytes.
+All numbers after the first byte are big-endian. The total size of the structure is `C * (N + 1) + 1` bytes. There is an option as to whether the numbers in the list are signed or unsigned.
 
 ## Command Line Usage
 
