@@ -40,20 +40,17 @@ Run it with `$ python a.py`.
 
 Example
 
-    $ python a.py A020344.txt | A020344.bin
+	# Create binary file from text file containing numbers
+    $ python a.py A020344.bin < A020344.bin
 
+	# Get the number length
 	$ python a.py -c A020344.bin
 	10001
 
+	# Convert the binary to text again
 	$ python a.py A020344.bin -d > decode.txt
 
-	$ diff A020344.txt decode.txt
-	no differences
-
 	$ python a.py encode.bin < decode.txt
-
-	$ diff A020344.bin encode.bin
-	no differences
 
 	$ python a.py -c encode.bin
 	10001
