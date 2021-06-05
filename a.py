@@ -29,25 +29,22 @@ def error (*args, **kwargs):
     sys.exit(1)
 
 
-def repr_num (num):
-    global args
-
-    base = args.base
-
+def repr_num (num, base, upper=False):
     if base == 10:
         return str(num)
-
-    if base == 16:
+    elif base == 16:
         s = hex(num)
-        if args.hexup:
-            s = s.upper()
     elif base == 8:
         s = oct(num)
     elif base == 2:
         s = bin(num)
 
+    if base > 10 and upper:
+        s = s.upper()
+
     if not args.prefix:
         s = s[2:]
+
     return s
 
 
@@ -92,7 +89,7 @@ if args.decode:
     try:
         with open(args.file, "rb") as file:
             width, length, nums = read_file(file, args.width, signed) 
-        print(" ".join(repr_num(x) for x in nums))
+        print(" ".join(repr_num(x, args.base, args.hexup) for x in nums))
         sys.exit(0)
     except Exception as e:
         error('error:', e)
@@ -100,7 +97,7 @@ elif args.count:
     # Count the file data length
     with open(args.file, "rb") as file:
         width, length = count_file(file, args.width)
-    print(repr_num(length))
+    print(repr_num(length, args.base, args.hexup))
     sys.exit(0)
 else:
     # Write a file out, with input data from stdin
