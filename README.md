@@ -38,7 +38,25 @@ Run it with `$ python a.py`.
     
     If -d or -c is supplied, the given file will be decoded into stdout, otherwise stdin will be scanned for numbers separated by spaces and written to the given file.
 
-Examples
+Example
+
+    $ python a.py A020344.txt | A020344.bin
+
+	$ python a.py -c A020344.bin
+	10001
+
+	$ python a.py A020344.bin -d > decode.txt
+
+	$ diff A020344.txt decode.txt
+	no differences
+
+	$ python a.py encode.bin < decode.txt
+
+	$ diff A020344.bin encode.bin
+	no differences
+
+	$ python a.py -c encode.bin
+	10001
 
 
 ## Library Usage
