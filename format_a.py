@@ -14,9 +14,6 @@ WIDTH : 1 byte, LENGTH : WIDTH bytes, ARRAY : WIDTH * LENGTH bytes
 
 '''
 
-from math import log
-
-
 def byte_length (bit_length):
     print('bits', bit_length)
     return (-8 & (bit_length + 7)) >> 3
@@ -161,7 +158,8 @@ if __name__ == "__main__":
     else:
         # Write a file out, with input data from stdin
         data = sys.stdin.read()
-        nums = [int(x.strip()) for x in data.split(" ")]
+        nums = [x.strip() for x in data.split(" ")]
+        nums = [int(x) for x in nums if x]
 
         if args.width is None:
             # Default byte-width limit when writing
